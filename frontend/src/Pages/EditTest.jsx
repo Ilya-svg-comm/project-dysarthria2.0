@@ -16,6 +16,11 @@ import {
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { v4 as uuidv4 } from 'uuid';
 
+const TRAILING_PUNCTUATION_REGEX = /[.,?!/\\'"\[\]()@#$%^&*№;:]+$/;
+
+const stripTrailingPunctuation = (word) =>
+  word.replace(TRAILING_PUNCTUATION_REGEX, '');
+
 const EditTest = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -167,16 +172,75 @@ const EditTest = () => {
   const handleWordClick = (word, index) => {
     if (!selectedExercise || !selectedExercise.king_json) return;
 
-    // Обновляем контент, заменяя выбранное слово подчеркиваниями
-    const updatedContent = selectedExercise.king_json.content.replace(word, '_'.repeat(word.length));
+    const missingWords = selectedExercise.king_json.missing_words || [];
+    const existingIndex = missingWords.findIndex(item => item.index === index);
+    const words = selectedExercise.king_json.content.split(' ');
+
+    let content;
+    let updatedMissingWords;
+
+    if (existingIndex === -1) {
+      // Скрываем слово: заменяем его по позиции, сохраняя хвостовую пунктуацию
+      const originalToken = words[index] ?? '';
+      const trailingPunctuation = originalToken.match(TRAILING_PUNCTUATION_REGEX)?.[0] || '';
+      words[index] = '_'.repeat(word.length) + trailingPunctuation;
+      content = words.join(' ');
+      updatedMissingWords = [...missingWords, { word, index }];
+    } else {
+      // Возвращаем слово обратно (условная отмена)
+      const missing = missingWords[existingIndex];
+      const maskedToken = words[index] ?? '';
+      const trailingPunctuation = maskedToken.match(TRAILING_PUNCTUATION_REGEX)?.[0] || '';
+      words[index] = missing.word + trailingPunctuation;
+      content = words.join(' ');
+      updatedMissingWords = [...missingWords];
+      updatedMissingWords.splice(existingIndex, 1);
+    }
 
     // Убеждаемся, что поле missing_words не пропадает
     const updatedExercise = {
       ...selectedExercise,
       king_json: {
         ...selectedExercise.king_json,
-        content: updatedContent,
-        missing_words: [...(selectedExercise.king_json.missing_words || []), { word, index }]
+        content,
+        missing_words: updatedMissingWords
+      }
+    };
+
+    setExercises(exercises.map(ex => ex.id === updatedExercise.id ? updatedExercise : ex));
+    setSelectedExercise(updatedExercise);
+  };
+
+  const handleLetterClick = (letter, index) => {
+    if (!selectedExercise || !selectedExercise.king_json) return;
+
+    const missingWords = selectedExercise.king_json.missing_words || [];
+    const existingIndex = missingWords.findIndex(item => item.index === index);
+
+    let content;
+    let updatedMissingWords;
+
+    if (existingIndex === -1) {
+      // Скрываем букву
+      content = selectedExercise.king_json.content.slice(0, index) + '_' + selectedExercise.king_json.content.slice(index + letter.length);
+      updatedMissingWords = [...missingWords, { word: letter, index }];
+    } else {
+      // Возвращаем букву обратно (условная отмена)
+      const missing = missingWords[existingIndex];
+      content =
+        selectedExercise.king_json.content.slice(0, index) +
+        missing.word +
+        selectedExercise.king_json.content.slice(index + missing.word.length);
+      updatedMissingWords = [...missingWords];
+      updatedMissingWords.splice(existingIndex, 1);
+    }
+
+    const updatedExercise = {
+      ...selectedExercise,
+      king_json: {
+        ...selectedExercise.king_json,
+        content,
+        missing_words: updatedMissingWords
       }
     };
 
@@ -186,10 +250,7 @@ const EditTest = () => {
 
   const renderContentWithButtonsType1 = (content) => {
     return content.split(' ').map((word, index) => {
-      let cleanedWord = word;
-      if (".,?!/\\'\"[]()@#$%^&*№;:".includes(word[word.length - 1])) {
-        cleanedWord = word.slice(0, -1);
-      }
+      const cleanedWord = stripTrailingPunctuation(word);
 
       return (
         <Fragment key={index}>
@@ -210,7 +271,7 @@ const EditTest = () => {
         {content.split('').map((word, index) => (
           <Button
             key={index}
-            onClick={() => handleWordClick(word, index)}
+            onClick={() => handleLetterClick(word, index)}
             style={{ margin: '5px' }}
           >
             {word}

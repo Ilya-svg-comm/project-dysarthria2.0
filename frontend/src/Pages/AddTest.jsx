@@ -17,6 +17,10 @@ const TRAILING_PUNCTUATION_REGEX = /[.,?!/\\'"\[\]()@#$%^&*№;:]+$/;
 const stripTrailingPunctuation = (word) =>
   word.replace(TRAILING_PUNCTUATION_REGEX, '');
 
+// Пропуски в тексте идут слева направо, поэтому ответы должны идти в том же порядке
+const sortMissingWordsByIndex = (list) =>
+  [...(list || [])].sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+
 const AddTest = () => {
   const navigate = useNavigate();
   const [exercises, setExercises] = useState([]);
@@ -45,15 +49,15 @@ const AddTest = () => {
           description: exercise.description,
           king_json: {
             content: exercise.content,
-            ...(exercise.type === '1' ? { missing_words: exercise.missingWords } :
-              exercise.type === '3' ? { missing_words: exercise.missingWords } :
+            ...(exercise.type === '1' ? { missing_words: sortMissingWordsByIndex(exercise.missingWords) } :
+              exercise.type === '3' ? { missing_words: sortMissingWordsByIndex(exercise.missingWords) } :
                 exercise.type === '4' ? { images: exercise.images, correct_order: exercise.correctOrder } :
                   { answers: exercise.answers, correct_answer: exercise.correctAnswer })
           },
           correct_answers: exercise.type === '1' ? (
-            exercise.missingWords.map(missingWord => missingWord.word)
+            sortMissingWordsByIndex(exercise.missingWords).map(missingWord => missingWord.word)
           ) : exercise.type === '3' ? (
-            exercise.missingWords.map(missingWord => missingWord.word)
+            sortMissingWordsByIndex(exercise.missingWords).map(missingWord => missingWord.word)
           ) : exercise.type === '4' ? (
             exercise.correctOrder
           ) : (
@@ -69,15 +73,15 @@ const AddTest = () => {
           description: exercise.description,
           king_json: {
             content: exercise.content,
-            ...(exercise.type === '1' ? { missing_words: exercise.missingWords } :
-              exercise.type === '3' ? { missing_words: exercise.missingWords } :
+            ...(exercise.type === '1' ? { missing_words: sortMissingWordsByIndex(exercise.missingWords) } :
+              exercise.type === '3' ? { missing_words: sortMissingWordsByIndex(exercise.missingWords) } :
                 exercise.type === '4' ? { images: exercise.images, correct_order: exercise.correctOrder } :
                   { answers: exercise.answers, correct_answer: exercise.correctAnswer })
           },
           correct_answers: exercise.type === '1' ? (
-            exercise.missingWords.map(missingWord => missingWord.word)
+            sortMissingWordsByIndex(exercise.missingWords).map(missingWord => missingWord.word)
           ) : exercise.type === '3' ? (
-            exercise.missingWords.map(missingWord => missingWord.word)
+            sortMissingWordsByIndex(exercise.missingWords).map(missingWord => missingWord.word)
           ) : exercise.type === '4' ? (
             exercise.correctOrder
           ) : (
@@ -135,16 +139,34 @@ const AddTest = () => {
   const handleWordClick = (word, index) => {
     if (!selectedExercise) return;
 
-    // Заменяем слово строго по его позиции, а не первое вхождение подстроки
+    const existingIndex = selectedExercise.missingWords.findIndex(item => item.index === index);
     const words = selectedExercise.content.split(' ');
-    const originalToken = words[index] ?? '';
-    const trailingPunctuation = originalToken.match(TRAILING_PUNCTUATION_REGEX)?.[0] || '';
-    words[index] = '_'.repeat(word.length) + trailingPunctuation;
+
+    let content;
+    let missingWords;
+
+    if (existingIndex === -1) {
+      // Скрываем слово: заменяем его по позиции, сохраняя хвостовую пунктуацию
+      const originalToken = words[index] ?? '';
+      const trailingPunctuation = originalToken.match(TRAILING_PUNCTUATION_REGEX)?.[0] || '';
+      words[index] = '_'.repeat(word.length) + trailingPunctuation;
+      content = words.join(' ');
+      missingWords = sortMissingWordsByIndex([...selectedExercise.missingWords, { word, index }]);
+    } else {
+      // Возвращаем слово обратно (условная отмена)
+      const missing = selectedExercise.missingWords[existingIndex];
+      const maskedToken = words[index] ?? '';
+      const trailingPunctuation = maskedToken.match(TRAILING_PUNCTUATION_REGEX)?.[0] || '';
+      words[index] = missing.word + trailingPunctuation;
+      content = words.join(' ');
+      missingWords = [...selectedExercise.missingWords];
+      missingWords.splice(existingIndex, 1);
+    }
 
     const updatedExercise = {
       ...selectedExercise,
-      content: words.join(' '),
-      missingWords: [...selectedExercise.missingWords, { word, index }]
+      content,
+      missingWords
     };
     setExercises(exercises.map(ex => ex.id === updatedExercise.id ? updatedExercise : ex));
     setSelectedExercise(updatedExercise);
@@ -153,17 +175,27 @@ const AddTest = () => {
   const handleLetterClick = (letter, index) => {
     if (!selectedExercise) return;
 
-    if (selectedExercise.missingWords.some(item => item.index === index)) return;
+    const existingIndex = selectedExercise.missingWords.findIndex(item => item.index === index);
 
-    const updatedExercise = {
-      ...selectedExercise,
-      content: selectedExercise.content.slice(0, index) + '_' + selectedExercise.content.slice(index + letter.length),
-      missingWords: [
-          ...selectedExercise.missingWords,
-        {word: letter, index}
-      ]
-    };
+    let content;
+    let missingWords;
 
+    if (existingIndex === -1) {
+      // Скрываем букву
+      content = selectedExercise.content.slice(0, index) + '_' + selectedExercise.content.slice(index + letter.length);
+      missingWords = [...selectedExercise.missingWords, { word: letter, index }];
+    } else {
+      // Возвращаем букву обратно (условная отмена)
+      const missing = selectedExercise.missingWords[existingIndex];
+      content =
+        selectedExercise.content.slice(0, index) +
+        missing.word +
+        selectedExercise.content.slice(index + missing.word.length);
+      missingWords = [...selectedExercise.missingWords];
+      missingWords.splice(existingIndex, 1);
+    }
+
+    const updatedExercise = { ...selectedExercise, content, missingWords };
     setExercises(exercises.map(ex =>
         ex.id === updatedExercise.id ? updatedExercise : ex
     ));
@@ -205,6 +237,8 @@ const AddTest = () => {
 
   const addAnswer = () => {
     if (!selectedExercise) return;
+    // Защита: не добавляем новый вариант, пока есть незаполненный
+    if (selectedExercise.answers.some(answer => answer.trim() === '')) return;
     const updatedExercise = {
       ...selectedExercise,
       answers: [...selectedExercise.answers, '']
@@ -215,6 +249,8 @@ const AddTest = () => {
 
   const setCorrectAnswer = (answer) => {
     if (!selectedExercise) return;
+    // Защита: нельзя выбрать пустой вариант как правильный
+    if (!answer || answer.trim() === '') return;
     const updatedExercise = { ...selectedExercise, correctAnswer: answer };
     setExercises(exercises.map(ex => ex.id === updatedExercise.id ? updatedExercise : ex));
     setSelectedExercise(updatedExercise);
@@ -224,7 +260,14 @@ const AddTest = () => {
     if (!selectedExercise) return;
     const updatedAnswers = [...selectedExercise.answers];
     updatedAnswers[index] = value;
-    const updatedExercise = { ...selectedExercise, answers: updatedAnswers };
+    const updatedExercise = {
+      ...selectedExercise,
+      answers: updatedAnswers,
+      // Защита: если редактируемый вариант и есть правильный ответ — обновляем его
+      correctAnswer: selectedExercise.correctAnswer === selectedExercise.answers[index]
+        ? value
+        : selectedExercise.correctAnswer
+    };
     setExercises(exercises.map(ex => ex.id === updatedExercise.id ? updatedExercise : ex));
     setSelectedExercise(updatedExercise);
   };
@@ -269,7 +312,7 @@ const AddTest = () => {
       type: selectedExercise.type,
       king_json: selectedExercise.type === '1' || selectedExercise.type === '3' ? {
         content: selectedExercise.content,
-        missing_words: selectedExercise.missingWords
+        missing_words: sortMissingWordsByIndex(selectedExercise.missingWords)
       } : selectedExercise.type === '4' ? {
         images: selectedExercise.images,
         correct_order: selectedExercise.correctOrder
@@ -279,9 +322,9 @@ const AddTest = () => {
         correct_answer: selectedExercise.correctAnswer
       },
       correct_answers: selectedExercise.type === '1' ? (
-        selectedExercise.missingWords.map(missingWord => missingWord.word)
+        sortMissingWordsByIndex(selectedExercise.missingWords).map(missingWord => missingWord.word)
       ) : selectedExercise.type === '3' ? (
-        selectedExercise.missingWords.map(missingWord => missingWord.word)
+        sortMissingWordsByIndex(selectedExercise.missingWords).map(missingWord => missingWord.word)
       ) : selectedExercise.type === '4' ? (
         selectedExercise.correctOrder
       ) : (
@@ -330,8 +373,18 @@ const AddTest = () => {
   
   const handleCorrectOrderChange = (index, value) => {
     if (!selectedExercise) return;
+    const key = `img${index + 1}`;
+    const newValue = value.trim(); // Сохраняем строковое значение
+
+    // Защита: не допускаем одинаковый порядковый номер у разных изображений
+    if (newValue !== '') {
+      const duplicate = Object.entries(selectedExercise.correctOrder)
+        .some(([otherKey, otherValue]) => otherKey !== key && otherValue === newValue);
+      if (duplicate) return;
+    }
+
     const updatedOrder = { ...selectedExercise.correctOrder };
-    updatedOrder[`img${index + 1}`] = value.toString(); // Сохраняем строковое значение
+    updatedOrder[key] = newValue;
     const updatedExercise = { ...selectedExercise, correctOrder: updatedOrder };
     setExercises(exercises.map(ex => ex.id === updatedExercise.id ? updatedExercise : ex));
     setSelectedExercise(updatedExercise);
@@ -399,7 +452,8 @@ const AddTest = () => {
                     className=' input-style area-1'
                     value={selectedExercise.content}
                     onChange={(e) => {
-                      const updatedExercise = { ...selectedExercise, content: e.target.value };
+                      // При изменении текста выбранные пропуски/буквы становятся неактуальными
+                      const updatedExercise = { ...selectedExercise, content: e.target.value, missingWords: [] };
                       setExercises(exercises.map(ex => ex.id === updatedExercise.id ? updatedExercise : ex));
                       setSelectedExercise(updatedExercise);
                     }}
@@ -493,7 +547,8 @@ const AddTest = () => {
                     className=' input-style area-1'
                     value={selectedExercise.content}
                     onChange={(e) => {
-                      const updatedExercise = { ...selectedExercise, content: e.target.value };
+                      // При изменении текста выбранные пропуски/буквы становятся неактуальными
+                      const updatedExercise = { ...selectedExercise, content: e.target.value, missingWords: [] };
                       setExercises(exercises.map(ex => ex.id === updatedExercise.id ? updatedExercise : ex));
                       setSelectedExercise(updatedExercise);
                     }}

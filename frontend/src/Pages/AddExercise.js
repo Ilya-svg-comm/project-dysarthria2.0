@@ -6,6 +6,12 @@ import Modal from './Components/Modal';
 import axios from 'axios';
 import useModal from '../hooks/useModal';
 import { createExercise } from './Components/api';
+
+const TRAILING_PUNCTUATION_REGEX = /[.,?!/\\'"\[\]()@#$%^&*№;:]+$/;
+
+const stripTrailingPunctuation = (word) =>
+  word.replace(TRAILING_PUNCTUATION_REGEX, '');
+
 const AddExercise = () => {
 
   const navigate = useNavigate();
@@ -102,22 +108,75 @@ const AddExercise = () => {
   };
 
   const handleWordClick = (word, index) => {
-    const updatedContent = exercise.content.replace(word, '_'.repeat(word.length));
+    if (!exercise) return;
+
+    const existingIndex = exercise.missingWords.findIndex(item => item.index === index);
+    const words = exercise.content.split(' ');
+
+    let content;
+    let missingWords;
+
+    if (existingIndex === -1) {
+      // Скрываем слово: заменяем его по позиции, сохраняя хвостовую пунктуацию
+      const originalToken = words[index] ?? '';
+      const trailingPunctuation = originalToken.match(TRAILING_PUNCTUATION_REGEX)?.[0] || '';
+      words[index] = '_'.repeat(word.length) + trailingPunctuation;
+      content = words.join(' ');
+      missingWords = [...exercise.missingWords, { word, index }];
+    } else {
+      // Возвращаем слово обратно (условная отмена)
+      const missing = exercise.missingWords[existingIndex];
+      const maskedToken = words[index] ?? '';
+      const trailingPunctuation = maskedToken.match(TRAILING_PUNCTUATION_REGEX)?.[0] || '';
+      words[index] = missing.word + trailingPunctuation;
+      content = words.join(' ');
+      missingWords = [...exercise.missingWords];
+      missingWords.splice(existingIndex, 1);
+    }
+
     const updatedExercise = {
       ...exercise,
-      content: updatedContent,
-      missingWords: [...exercise.missingWords, { word, index }]
+      content,
+      missingWords
+    };
+    setExercise(updatedExercise);
+  };
+
+  const handleLetterClick = (letter, index) => {
+    if (!exercise) return;
+
+    const existingIndex = exercise.missingWords.findIndex(item => item.index === index);
+
+    let content;
+    let missingWords;
+
+    if (existingIndex === -1) {
+      // Скрываем букву
+      content = exercise.content.slice(0, index) + '_' + exercise.content.slice(index + letter.length);
+      missingWords = [...exercise.missingWords, { word: letter, index }];
+    } else {
+      // Возвращаем букву обратно (условная отмена)
+      const missing = exercise.missingWords[existingIndex];
+      content =
+        exercise.content.slice(0, index) +
+        missing.word +
+        exercise.content.slice(index + missing.word.length);
+      missingWords = [...exercise.missingWords];
+      missingWords.splice(existingIndex, 1);
+    }
+
+    const updatedExercise = {
+      ...exercise,
+      content,
+      missingWords
     };
     setExercise(updatedExercise);
   };
 
   const renderContentWithButtonsType1 = (content) => {
     return content.split(' ').map((word, index) => {
-      let cleanedWord = word;
-      if (".,?!/\\'\"[]()@#$%^&*№;:".includes(word[word.length - 1])) {
-        cleanedWord = word.slice(0, -1);
-      }
-  
+      const cleanedWord = stripTrailingPunctuation(word);
+
       return (
         <Fragment key={index}>
           <Button
@@ -137,7 +196,7 @@ const AddExercise = () => {
         {content.split('').map((word, index) => (
           <Button
             key={index}
-            onClick={() => handleWordClick(word, index)}
+            onClick={() => handleLetterClick(word, index)}
             style={{ margin: '5px' }}
           >
             {word}
