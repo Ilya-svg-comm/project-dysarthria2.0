@@ -12,6 +12,11 @@ import {
 } from './Components/api';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
+const TRAILING_PUNCTUATION_REGEX = /[.,?!/\\'"\[\]()@#$%^&*№;:]+$/;
+
+const stripTrailingPunctuation = (word) =>
+  word.replace(TRAILING_PUNCTUATION_REGEX, '');
+
 const AddTest = () => {
   const navigate = useNavigate();
   const [exercises, setExercises] = useState([]);
@@ -129,10 +134,16 @@ const AddTest = () => {
 
   const handleWordClick = (word, index) => {
     if (!selectedExercise) return;
-    const updatedContent = selectedExercise.content.replace(word, '_'.repeat(word.length));
+
+    // Заменяем слово строго по его позиции, а не первое вхождение подстроки
+    const words = selectedExercise.content.split(' ');
+    const originalToken = words[index] ?? '';
+    const trailingPunctuation = originalToken.match(TRAILING_PUNCTUATION_REGEX)?.[0] || '';
+    words[index] = '_'.repeat(word.length) + trailingPunctuation;
+
     const updatedExercise = {
       ...selectedExercise,
-      content: updatedContent,
+      content: words.join(' '),
       missingWords: [...selectedExercise.missingWords, { word, index }]
     };
     setExercises(exercises.map(ex => ex.id === updatedExercise.id ? updatedExercise : ex));
@@ -161,10 +172,7 @@ const AddTest = () => {
 
   const renderContentWithButtonsType1 = (content) => {
     return content.split(' ').map((word, index) => {
-      let cleanedWord = word;
-      if (".,?!/\\'\"[]()@#$%^&*№;:".includes(word[word.length - 1])) {
-        cleanedWord = word.slice(0, -1);
-      }
+      const cleanedWord = stripTrailingPunctuation(word);
 
       return (
         <Fragment key={index}>
