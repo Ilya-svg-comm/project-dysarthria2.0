@@ -251,7 +251,7 @@ const TestPassing = () => {
               <h2>Расположите изображения в правильном порядке</h2>
               {selectedExercise && shuffledImages.length > 0 && (
                 <DragDropContext onDragEnd={handleDragEnd}>
-                  <Droppable droppableId="images">
+                  <Droppable droppableId="images" direction="horizontal">
                     {(provided) => (
                       <div
                         {...provided.droppableProps}

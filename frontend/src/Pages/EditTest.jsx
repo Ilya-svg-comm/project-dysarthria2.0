@@ -554,7 +554,7 @@ const EditTest = () => {
                     />
                     <div className="image-container">
                       <DragDropContext onDragEnd={handleDragEnd}>
-                        <Droppable droppableId="images">
+                        <Droppable droppableId="images" direction="horizontal">
                           {(provided) => (
                             <div
                               {...provided.droppableProps}
