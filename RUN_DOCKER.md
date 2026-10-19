@@ -41,7 +41,7 @@
 | Роутинг | react-router-dom 6 |
 | UI-кит | Chakra UI 2.8, React-Bootstrap 2.10, Bootstrap 5 |
 | HTTP | axios 1.7 |
-| Данные | react-query 3, react-beautiful-dnd, react-autosuggest |
+| Данные | react-query 3, @hello-pangea/dnd, react-autosuggest |
 | Сборка | `yarn install && yarn build` → статика, отдаётся nginx |
 
 ### Инфраструктура

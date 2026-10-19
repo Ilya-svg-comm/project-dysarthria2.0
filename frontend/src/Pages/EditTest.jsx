@@ -13,7 +13,7 @@ import {
   unLinkExerciseToTest,
   deleteTest
 } from './Components/api';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
 
 const EditTest = () => {
