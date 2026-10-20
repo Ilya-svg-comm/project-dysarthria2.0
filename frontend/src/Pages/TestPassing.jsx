@@ -6,7 +6,7 @@ import { useQuery } from 'react-query';
 import { fetchTestById } from './Components/api';
 import axiosConfig from './Components/AxiosConfig';
 import { v4 as uuidv4 } from 'uuid';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 const getCorrectAnswer = (exercise) => {
   const kingJson = exercise.king_json || {};
@@ -251,7 +251,7 @@ const TestPassing = () => {
               <h2>Расположите изображения в правильном порядке</h2>
               {selectedExercise && shuffledImages.length > 0 && (
                 <DragDropContext onDragEnd={handleDragEnd}>
-                  <Droppable droppableId="images">
+                  <Droppable droppableId="images" direction="horizontal">
                     {(provided) => (
                       <div
                         {...provided.droppableProps}

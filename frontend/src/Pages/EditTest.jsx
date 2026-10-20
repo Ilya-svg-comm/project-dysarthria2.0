@@ -13,7 +13,7 @@ import {
   unLinkExerciseToTest,
   deleteTest
 } from './Components/api';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
 
 const TRAILING_PUNCTUATION_REGEX = /[.,?!/\\'"\[\]()@#$%^&*№;:]+$/;
@@ -615,7 +615,7 @@ const EditTest = () => {
                     />
                     <div className="image-container">
                       <DragDropContext onDragEnd={handleDragEnd}>
-                        <Droppable droppableId="images">
+                        <Droppable droppableId="images" direction="horizontal">
                           {(provided) => (
                             <div
                               {...provided.droppableProps}

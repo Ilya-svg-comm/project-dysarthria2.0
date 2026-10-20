@@ -10,7 +10,7 @@ import {
   createTest, createExercise, linkExerciseToTest, findExerciseByName, addPublicTest,
   fetchExercises, fetchTestById, fetchPublicTests, updateExercise
 } from './Components/api';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 const TRAILING_PUNCTUATION_REGEX = /[.,?!/\\'"\[\]()@#$%^&*№;:]+$/;
 
@@ -605,7 +605,7 @@ const AddTest = () => {
                     />
                     <div className="image-container">
                       <DragDropContext onDragEnd={handleDragEnd}>
-                        <Droppable droppableId="images">
+                        <Droppable droppableId="images" direction="horizontal">
                           {(provided) => (
                             <div
                               {...provided.droppableProps}
