@@ -1,5 +1,10 @@
 # Project dysarthria
 Информационная система для коррекции дизартрии
+
+> Актуальная инструкция по запуску через Docker/Makefile — в `RUN_DOCKER.md`.
+> Шаблоны окружения: `.env.docker.form`, `backend/.env.form`, `frontend/.env.form`.
+> Реальные `.env`-файлы в `.gitignore` и не коммитятся.
+
 ## Dev setup:
 ```bash
 # git clone repo
@@ -16,10 +21,11 @@ docker compose logs postgres
 # docker postgres stop
 # docker compose -f docker-compose.yml stop
 docker compose stop postgres 
-# 
-# create .env file
+#
+# create backend/.env from template
+cp backend/.env.form backend/.env
 # ...
-# run migrations
+# run migrations (migration files are generated locally and are not tracked)
 python manage.py makemigrations users
 python manage.py makemigrations testing
 python manage.py migrate
@@ -30,6 +36,7 @@ python manage.py runserver 8000
 How to run frontend app.
 ```bash
 cd frontend/
+cp .env.form .env # local dev env (not tracked)
 yarn install # install project dependencies
 yarn start # start frontend app
 ```
