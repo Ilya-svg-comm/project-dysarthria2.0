@@ -15,7 +15,7 @@ build-run: build migrate run-entrypoint collectstatic run
 
 # Применение миграций
 migrate: check-env
-	docker compose up -d postgres minio
+	docker compose up -d postgres
 	@echo "Ожидание готовности postgres..."
 	@until docker compose exec -T postgres pg_isready -U $$(grep -E '^POSTGRES_USER=' .env.docker | cut -d '=' -f2-) -d $$(grep -E '^POSTGRES_DB=' .env.docker | cut -d '=' -f2-) 2>/dev/null; do sleep 2; done
 	docker compose up -d backend
@@ -32,7 +32,7 @@ run-entrypoint:
 
 # Запуск всех контейнеров
 run: check-env
-	docker compose up -d postgres minio backend frontend
+	docker compose up -d postgres backend frontend
 
 # Остановка
 stop:

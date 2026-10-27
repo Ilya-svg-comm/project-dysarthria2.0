@@ -19,28 +19,6 @@ services:
       timeout: 5s
       retries: 10
 
-  minio:
-    # Официальный образ minio/minio больше недоступен на Docker Hub (2026).
-    # elestio/minio — совместимая сборка MinIO с тем же entrypoint/API.
-    image: elestio/minio:latest
-    container_name: minio
-    restart: unless-stopped
-    command: server /data --console-address ":9001"
-    env_file:
-      - .env.docker
-    volumes:
-      - minio_data:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    networks:
-      - app_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-
   backend:
     build: ./backend
     container_name: backend
@@ -57,8 +35,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      minio:
-        condition: service_started
     networks:
       - app_network
 
@@ -82,7 +58,6 @@ volumes:
   data:
   static_volume:
   media_volume:
-  minio_data:
 
 networks:
   app_network:
