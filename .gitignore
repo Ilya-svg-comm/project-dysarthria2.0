@@ -3,14 +3,32 @@
 *~
 __pycache__
 
-# Env
-backend/.env
+# Python tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Env: реальные файлы с секретами не коммитим
+.env
 .env.docker
+backend/.env
+frontend/.env.production
 myvenv/
 venv/
+.venv/
+
+# Шаблоны env должны попадать в git — это основа единого запуска
+!.env.docker.form
+!backend/.env.form
+!frontend/.env.form
+!frontend/.env.production.form
 
 # Database
 db.sqlite3
+*.sqlite3
 
 # macOS
 ._*
@@ -30,6 +48,7 @@ $RECYCLE.BIN/
 *.code-workspace
 *Zone.Identifier
 
+# Django migrations создаются в контейнере и не отслеживаются git
 migrations/
 migration/
 .idea
@@ -39,6 +58,9 @@ media/
 # docker postgres dev
 docker/dev-db/postgres/pgdata
 docker/dev-db/postgres/2.\ Init\ Database
+
+# Локальные override-файлы compose (порты, volumes и т.п.)
+docker-compose.override.yml
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
@@ -59,6 +81,7 @@ docker/dev-db/postgres/2.\ Init\ Database
 .env.development.local
 .env.test.local
 .env.production.local
+# Локальный env frontend; шаблон для копирования — frontend/.env.form
 frontend/.env
 
 npm-debug.log*

@@ -1,23 +1,7 @@
 services:
-  django:
-    build: backend
-    command: gunicorn project.wsgi:application --bind 0.0.0.0:8001
-    restart: unless-stopped
-    volumes:
-      - ./backend/:/usr/src/app/
-      - static_volume:/usr/src/app/static
-      - media_volume:/usr/src/app/media
-    ports:
-      - 8001:8001
-    env_file:
-      - .env.docker
-    depends_on:
-      - postgres
-    networks:
-      - nginx_network
-
   postgres:
     image: postgres:16
+    container_name: postgres
     restart: unless-stopped
     environment:
       PGDATA: "/var/lib/postgresql/data/pgdata"
@@ -28,23 +12,47 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - nginx_network
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  # nginx with react frontend
-  nginx:
+  backend:
+    build: ./backend
+    container_name: backend
+    command: gunicorn project.wsgi:application --bind 0.0.0.0:8001
     restart: unless-stopped
+    volumes:
+      - ./backend/:/usr/src/app/
+      - static_volume:/usr/src/app/static
+      - media_volume:/usr/src/app/media
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env.docker
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    container_name: frontend
+    restart: unless-stopped
     volumes:
-      - static_volume:/usr/src/app/static  # <-- bind the static volume
-      - media_volume:/usr/src/app/media  # <-- bind the media volume
+      - static_volume:/usr/src/app/static
+      - media_volume:/usr/src/app/media
     depends_on:
-      - django
+      - backend
     networks:
-      - nginx_network
+      - app_network
     ports:
-      - 80:80
+      - "80:80"
 
 volumes:
   data:
@@ -52,5 +60,5 @@ volumes:
   media_volume:
 
 networks:
-  nginx_network:
+  app_network:
     driver: bridge
