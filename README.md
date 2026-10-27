@@ -3,9 +3,6 @@
 Информационная система для коррекции дизартрии.
 
 > Актуальная инструкция по запуску и настройке — в этом README.
->
-> Файлы с секретами не коммитятся. Шаблоны и назначение каждого env-файла
-> описаны в разделе [Окружение](#окружение).
 
 ## Стек
 
@@ -254,15 +251,14 @@ docker compose exec -T backend python manage.py test api_v0 --parallel
 
 ## Окружение
 
-В проекте используются четыре env-файла. Реальные файлы с секретами не должны
-попадать в git; шаблоны для копирования, наоборот, отслеживаются.
+В проекте используются четыре env-файла.
 
-| Файл | Шаблон | Git | Назначение |
-|---|---|---|---|
-| `.env.docker` | `.env.docker.form` | не отслеживается | Docker Compose: переменные для `postgres` и `backend` |
-| `backend/.env` | `backend/.env.form` | не отслеживается | локальный запуск backend через `runserver` |
-| `frontend/.env` | `frontend/.env.form` | не отслеживается | локальная разработка frontend через `yarn start` |
-| `frontend/.env.production` | — | отслеживается | production-сборка frontend в Docker (`yarn build`) |
+| Файл | Шаблон | Назначение |
+|---|---|---|
+| `.env.docker` | `.env.docker.form` | Docker Compose: переменные для `postgres` и `backend` |
+| `backend/.env` | `backend/.env.form` | локальный запуск backend через `runserver` |
+| `frontend/.env` | `frontend/.env.form` | локальная разработка frontend через `yarn start` |
+| `frontend/.env.production` | `frontend/.env.production.form` | production-сборка frontend в Docker (`yarn build`) |
 
 Корневой `.env` в текущей схеме не используется: compose читает
 `.env.docker`, а backend при локальном запуске — `backend/.env`.
@@ -319,14 +315,20 @@ PostgreSQL.
 
 Файл для локальной разработки (`yarn start`). Содержит `HOST`, `PORT` и
 `REACT_APP_BASE_URL`. В шаблоне `frontend/.env.form` указан локальный backend
-`http://127.0.0.1:8000`. Файл не отслеживается git.
+`http://127.0.0.1:8000`.
 
 В Docker-сборке используется не он, а `frontend/.env.production`.
 
 ### `frontend/.env.production`
 
-Рабочий production-env для Create React App. Он отслеживается git, потому что
-не содержит секретов. При `yarn build` задаёт пустой `REACT_APP_BASE_URL=`;
+Файл для production-сборки frontend в Docker (`yarn build`). Используйте
+шаблон `frontend/.env.production.form` для копирования.
+
+```bash
+cp frontend/.env.production.form frontend/.env.production
+```
+
+При `yarn build` задаёт пустой `REACT_APP_BASE_URL=`;
 тогда axios отправляет относительные запросы (`/api/v0/...`) на тот же origin,
 а nginx проксирует их в backend.
 
@@ -340,13 +342,9 @@ PostgreSQL.
 
 ### Шаблоны env
 
-Шаблоны `.env.docker.form`, `backend/.env.form` и `frontend/.env.form`
-отслеживаются git и содержат только заглушки (`change-me`, локальные адреса).
-Реальные пароли и `SECRET_KEY` в них хранить нельзя.
-
-В `.gitignore` исключены `.env.docker`, `backend/.env` и `frontend/.env`.
-`frontend/.env.production` намеренно не исключён: это конфигурация сборки без
-секретов.
+Шаблоны `.env.docker.form`, `backend/.env.form`, `frontend/.env.form` и
+`frontend/.env.production.form` содержат только заглушки (`change-me`,
+локальные адреса).
 
 ### Текущее ограничение настроек
 

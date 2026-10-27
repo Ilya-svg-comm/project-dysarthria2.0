@@ -15,6 +15,7 @@ htmlcov/
 .env
 .env.docker
 backend/.env
+frontend/.env.production
 myvenv/
 venv/
 .venv/
@@ -23,6 +24,7 @@ venv/
 !.env.docker.form
 !backend/.env.form
 !frontend/.env.form
+!frontend/.env.production.form
 
 # Database
 db.sqlite3
